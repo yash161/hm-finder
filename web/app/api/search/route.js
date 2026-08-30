@@ -359,7 +359,22 @@ function scoreCandidate(item, job) {
     return null;
   }
 
-  const isPast = headline.toLowerCase().includes("ex-") || headline.toLowerCase().includes("former");
+  // Detect ex-employees: check if headline shows a DIFFERENT company as current employer
+  const headlineLower = headline.toLowerCase();
+  let isPast = headlineLower.includes("ex-") || headlineLower.includes("former");
+  
+  // If headline explicitly says "at OtherCompany" and OtherCompany is NOT the target, they've moved on
+  if (!isPast) {
+    const atMatch = headline.match(/\bat\s+([A-Za-z0-9][\w\s&.,]+)/i);
+    if (atMatch) {
+      const currentCo = atMatch[1].trim().toLowerCase().replace(/\s*(llc|inc|ltd|corporation|corp)\.?$/i, "").trim();
+      const isTarget = cleanTerms.some(term => currentCo.includes(term) || term.includes(currentCo));
+      if (!isTarget && currentCo.length >= 3) {
+        isPast = true; // They currently work elsewhere
+      }
+    }
+  }
+
   let score = 50;
   const reasons = [`Works at ${job.company}`];
 
@@ -391,13 +406,19 @@ function scoreCandidate(item, job) {
     category = "🤝 Technical Recruiter / Talent";
     score += 25;
     reasons.push("Technical recruitment partner");
+  } else if (isPast) {
+    // Past employees get heavily penalized — often not useful leads
+    category = "⏳ Past Employee";
+    score -= 25;
+    reasons.push("(Past employee — no longer at company)");
   } else {
     category = "👥 Senior Engineer / Team Member";
     score += 15;
     reasons.push("Engineer / practitioner at target company");
   }
 
-  if (isPast) {
+  // Additional penalty for past employees in any category
+  if (isPast && !category.includes("Past")) {
     score -= 30;
     reasons.push("(Past employee)");
   }
