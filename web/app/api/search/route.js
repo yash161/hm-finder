@@ -1,7 +1,66 @@
 import { NextResponse } from "next/server";
 
 const TINYFISH_API_KEY = process.env.TINYFISH_API_KEY || "";
+const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 const TINYFISH_SEARCH_URL = "https://api.search.tinyfish.ai";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+// ===== LLM-based JD Extraction (primary method) =====
+async function extractJobInfoWithLLM(text) {
+  if (!GROQ_API_KEY) return null;
+  
+  // Send first 4000 chars — enough context for the main JD, avoids sending sidebar noise
+  const truncated = text.substring(0, 4000);
+  
+  try {
+    const res = await fetch(GROQ_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "qwen/qwen3.8-27b",
+        messages: [
+          {
+            role: "system",
+            content: `/no_think\nYou extract structured job info from raw pasted text. The text may contain multiple job listings, navigation noise, sidebar recommendations, and other garbage. Identify ONLY the PRIMARY job being viewed (the main/featured one, not sidebar recommendations). Output ONLY valid JSON with these fields:
+{"company": "...", "title": "...", "location": "...", "department": "engineering|data & ai|product|design|trading|security"}
+No explanation, no markdown, no code fences. Just the JSON object.`
+          },
+          {
+            role: "user",
+            content: truncated
+          }
+        ],
+        temperature: 0,
+        max_completion_tokens: 150,
+      }),
+    });
+    
+    if (!res.ok) return null;
+    
+    const data = await res.json();
+    let content = data.choices?.[0]?.message?.content || "";
+    
+    // Strip any markdown fences or think tags
+    content = content.replace(/```json\s*/g, "").replace(/```/g, "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    
+    const parsed = JSON.parse(content);
+    if (parsed.company && parsed.company.length > 1 && parsed.title) {
+      return {
+        company: parsed.company.replace(/\s*(LLC|Inc|Ltd|Corporation|Corp)\.?$/i, "").trim(),
+        title: parsed.title,
+        location: parsed.location || null,
+        department: parsed.department || "engineering",
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error("[LLM Extract Error]", err);
+    return null;
+  }
+}
 
 // ===== Boilerplate & Noise Markers =====
 const STOP_WORDS = new Set([
@@ -443,7 +502,36 @@ export async function POST(req) {
       return NextResponse.json({ error: "Job description too short" }, { status: 400 });
     }
 
-    const job = parseJobDescription(jd_text);
+    // Try LLM extraction first (fast, handles noisy pastes), regex as fallback
+    const [llmResult, regexResult] = await Promise.all([
+      extractJobInfoWithLLM(jd_text),
+      Promise.resolve(parseJobDescription(jd_text)),
+    ]);
+
+    let job;
+    if (llmResult && llmResult.company !== "Target Company" && llmResult.company.length > 1) {
+      // LLM succeeded — use its extraction, add aliases from ALIAS_MAP
+      const lookupKey = llmResult.company.toLowerCase().trim();
+      const aliases = [];
+      if (ALIAS_MAP[lookupKey]) {
+        for (const alias of ALIAS_MAP[lookupKey]) {
+          if (alias.toLowerCase() !== llmResult.company.toLowerCase()) aliases.push(alias);
+        }
+      }
+      job = {
+        company: llmResult.company,
+        aliases,
+        title: llmResult.title || regexResult.title,
+        location: llmResult.location || regexResult.location,
+        department: llmResult.department || regexResult.department,
+        subteam: regexResult.subteam,
+      };
+      console.log("[LLM Extract] Used LLM result:", JSON.stringify(job));
+    } else {
+      // Fallback to regex
+      job = regexResult;
+      console.log("[Regex Fallback] Used regex result:", JSON.stringify(job));
+    }
 
     // Build targeted query tiers
     const companyNames = [`"${job.company}"`, ...job.aliases.slice(0, 2).filter(a => a.length > 2).map(a => `"${a}"`)];
