@@ -11,12 +11,16 @@ function parseJobDescription(text) {
   let company = "Unknown Company";
   const companyPatterns = [
     /(?:company|employer|organization)\s*[:\-–]\s*(.+)/i,
+    /\bat\s+([A-Z][A-Za-z\s&.]+?)(?:\s*[,.\-–]|\s+in\b|\s+is\b|$)/,
     /(?:about|join)\s+(?:us\s+at\s+)?([A-Z][A-Za-z\s&.]+?)(?:\s*[\-–|,]|\s+is\b)/,
-    /([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){0,3})\s+is\s+(?:a|an|the|looking|seeking|hiring)/,
+    /([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){0,4})\s+is\s+(?:a|an|the|looking|seeking|hiring)/,
   ];
   for (const p of companyPatterns) {
     const m = text.match(p);
-    if (m) { company = m[1].trim().replace(/[.,;:]+$/, ""); break; }
+    if (m) {
+      const extracted = m[1].trim().replace(/[.,;:]+$/, "");
+      if (extracted.length >= 3 && extracted.length <= 60) { company = extracted; break; }
+    }
   }
 
   // Aliases
