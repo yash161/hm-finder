@@ -7,19 +7,26 @@ const TINYFISH_URL = "https://api.tinyfish.io/v1/search";
 function parseJobDescription(text) {
   const lower = text.toLowerCase();
 
-  // Company
+  // Noise words that should never be the company name
+  const NOISE = new Set(["wide", "level", "entry", "senior", "junior", "staff", "lead", "the", "and", "for", "our", "this", "that", "with", "from", "your", "team", "role", "position", "job", "work", "apply", "click", "here", "remote", "hybrid", "onsite"]);
+
+  // Company — try explicit labels first, then "at Company" with strict validation
   let company = "Unknown Company";
   const companyPatterns = [
-    /(?:company|employer|organization)\s*[:\-–]\s*(.+)/i,
-    /\bat\s+([A-Z][A-Za-z\s&.]+?)(?:\s*[,.\-–]|\s+in\b|\s+is\b|$)/,
-    /(?:about|join)\s+(?:us\s+at\s+)?([A-Z][A-Za-z\s&.]+?)(?:\s*[\-–|,]|\s+is\b)/,
-    /([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){0,4})\s+is\s+(?:a|an|the|looking|seeking|hiring)/,
+    /(?:company|employer|organization)\s*[:\-–]\s*([^\n]+)/i,
+    /(?:about|join)\s+(?:us\s+at\s+)?([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){1,5})(?:\s*[\-–|,]|\s+is\b)/,
+    /\bat\s+((?:[A-Z][A-Za-z]+\s+){1,4}[A-Z][A-Za-z]+)(?:\s*[,.\-–]|\s+in\b|\s+is\b)/,
+    /([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){1,4})\s+is\s+(?:a|an|the|looking|seeking|hiring)/,
   ];
   for (const p of companyPatterns) {
     const m = text.match(p);
     if (m) {
-      const extracted = m[1].trim().replace(/[.,;:]+$/, "");
-      if (extracted.length >= 3 && extracted.length <= 60) { company = extracted; break; }
+      let extracted = m[1].trim().replace(/[.,;:\-–]+$/, "").trim();
+      // Reject single-word noise and short garbage
+      if (extracted.length >= 4 && !NOISE.has(extracted.toLowerCase()) && /[A-Z]/.test(extracted[0])) {
+        company = extracted.substring(0, 60);
+        break;
+      }
     }
   }
 
@@ -37,15 +44,20 @@ function parseJobDescription(text) {
     }
   }
 
-  // Title
+  // Title — extract cleanly and truncate
   let title = "Software Engineer";
   const titlePatterns = [
-    /(?:job\s*title|position|role)\s*[:\-–]\s*(.+)/i,
-    /^(?:we(?:'re| are) (?:looking for|hiring|seeking) (?:a |an )?)?(.+?(?:engineer|developer|manager|analyst|architect|lead|director|scientist|specialist|coordinator|designer|administrator)[^\n]*)/im,
+    /(?:job\s*title|position|role)\s*[:\-–]\s*([^\n]+)/i,
+    /^(?:we(?:'re| are) (?:looking for|hiring|seeking) (?:a |an )?)?(.+?(?:engineer|developer|manager|analyst|architect|lead|director|scientist|specialist|coordinator|designer|administrator)(?:\s+(?:I{1,3}|IV|V|VI|1|2|3))?)/im,
   ];
   for (const p of titlePatterns) {
     const m = text.match(p);
-    if (m) { title = m[1].trim().replace(/[.,;:]+$/, "").substring(0, 80); break; }
+    if (m) {
+      // Clean up: remove "(Verified job)" tags, truncate
+      let t = m[1].trim().replace(/\(verified\s*job\)/gi, "").replace(/[.,;:]+$/, "").trim();
+      title = t.substring(0, 60);
+      break;
+    }
   }
 
   // Location
