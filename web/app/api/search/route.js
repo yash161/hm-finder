@@ -172,13 +172,11 @@ function extractCompanyAndAliases(text) {
     const counts = {};
     for (const c of candidates) counts[c] = (counts[c] || 0) + 1;
     primary = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
-    for (const c of Object.keys(counts)) {
-      if (c.toLowerCase() !== primary.toLowerCase() && !aliases.some(a => a.toLowerCase() === c.toLowerCase())) {
-        aliases.push(c);
-      }
-    }
+    // DO NOT add other candidates as aliases — they're often competitor brands
+    // from LinkedIn's "Competitors", "More jobs", or sidebar sections.
   }
 
+  // Only add verified parent/subsidiary aliases from ALIAS_MAP
   const lookupKey = primary.toLowerCase().trim();
   if (ALIAS_MAP[lookupKey]) {
     for (const alias of ALIAS_MAP[lookupKey]) {

@@ -113,8 +113,15 @@ FOLLOW-UP:
     const data = await completion.json();
     let raw = data.choices?.[0]?.message?.content || "";
 
-    // Strip <think> tags
+    // Strip <think> tags (multiple formats)
     raw = raw.replace(/<think>[\s\S]*?<\/think>/g, "").replace(/<\/?think>/g, "").trim();
+
+    // Strip reasoning blocks: "Thinking Process:", numbered analysis lists, bold markdown reasoning
+    raw = raw.replace(/^[\s\S]*?(?=LINKEDIN CONNECTION NOTE)/i, ""); // Everything before first section header
+    raw = raw.replace(/Thinking Process:[\s\S]*?(?=LINKEDIN CONNECTION NOTE|COLD EMAIL|$)/gi, "");
+    raw = raw.replace(/\*\*(?:Deconstruct|Target|Role|Location|Sender|Relevant|Candidate|Rules|Output)[\s\S]*?(?=LINKEDIN CONNECTION NOTE|COLD EMAIL|FOLLOW-UP|$)/gi, "");
+    raw = raw.replace(/^\d+\.\s+\*\*[\s\S]*?(?=LINKEDIN CONNECTION NOTE|COLD EMAIL|FOLLOW-UP|$)/gim, "");
+    raw = raw.trim();
 
     // Parse sections
     let connectionNote = "", email = "", followup = "";
@@ -127,11 +134,26 @@ FOLLOW-UP:
       followup = sections[3]?.trim() || "";
     }
 
-    // Fallback
+    // Clean each section — strip residual markdown reasoning
+    const cleanSection = (s) => {
+      return s
+        .replace(/^\s*\*\*(?:Deconstruct|Target|Role|Location|Sender|Relevant|Candidate|Rules|Output).*$/gim, "")
+        .replace(/^\s*\*\s+\*\*.*$/gim, "")  // bullet reasoning like "* **Target:** ..."
+        .replace(/^\s*\d+\.\s+\*\*.*$/gim, "")  // numbered reasoning like "1. **Deconstruct..."
+        .replace(/^Thinking Process:.*$/gim, "")
+        .trim();
+    };
+    connectionNote = cleanSection(connectionNote);
+    email = cleanSection(email);
+    followup = cleanSection(followup);
+
+    // Fallback: if parsing failed, try splitting on double newlines
     if (!connectionNote && !email) {
-      const parts = raw.split("\n\n");
+      const cleaned = raw.replace(/^\s*\*\*.*$/gim, "").replace(/^\s*\*\s+\*\*.*$/gim, "").trim();
+      const parts = cleaned.split("\n\n").filter(p => p.trim().length > 10);
       connectionNote = parts[0] || "";
       email = parts[1] || "";
+      followup = parts[2] || "";
     }
 
     if (connectionNote.length > 300) connectionNote = connectionNote.substring(0, 297) + "...";
