@@ -1,0 +1,118 @@
+Skip to content
+
+SIE and PlayStation logo
+Careers Home
+Benefits and Perks
+Working At SIE
+SIE Values
+Our Teams
+Emerging Talent
+Our Hiring Process
+Search careers
+Back to Careers
+Data Engineer II
+Location(s):
+United States, Aliso Viejo, CA
+Job ID:
+R-125071
+Apply Now
+Why Sony Interactive Entertainment?
+
+Sony Interactive Entertainment isn’t just the Best Place to Play — it’s also the Best Place to Work. Sony Interactive Entertainment (SIE) is the company behind the PlayStation brand. As a subsidiary of Sony Group Corporation, we’re part of a proud legacy of innovation and excellence. SIE is a dynamic technology company, delivering cutting-edge hardware and network services to more than 100 million people and an entertainment leader, home to some of the most beloved and recognizable intellectual properties (IP) in the world. Our role at SIE is to create and nurture the experiences under the PlayStation brand, a name synonymous with entertainment excellence and creativity.
+
+Data Engineer II
+Aliso Viejo, CA
+The Data Engineering Team fuels real-time, intelligent data insights for PlayStation’s Cloud Streaming offering. In this role, you’ll collaborate closely with teams across PlayStation to deliver a scalable and reliable data platform that drives a data-first culture and outlook.
+
+As a Data Engineer II, you will develop and maintain server-side applications for shaping, managing, and transforming data on a large geographically distributed infrastructure for PlayStation. Your work will include developing JVM based applications using Kotlin, Scala, or Java, Flink jobs, and APIs to provide real time data and insights across the Cloud Streaming ecosystem to ensure seamless data flow throughout our data pipeline. You will also work closely with our Business Intelligence team to translate product requirements to usable insights that fuel our business decisions. You bring passion and expertise to continuously improve the value that our data platform provides to data producers and consumers across the organization, providing tooling, standard methodologies, and state-of-the art technology to empower data-driven decisions to the company. You are self-motivated and thrive in a distributed team environment - comfortable taking initiative, handling your own work, and collaborating effectively across time zones and communication channels, embodying our one team mantra!
+
+Responsibilities
+Design and implement middleware and backend systems capable of handling high throughput and load
+Develop and maintain stream processing jobs using Flink (stateful / stateless), and implement scalable ETL jobs that enable our partners and customers to glean intelligent insight
+Optimize performance, reliability, and monitoring of the data pipeline stack
+Support migration efforts of our on-premises Kafka to new cloud technologies
+Perform in-depth analysis of functional or business requirements
+Contribute to architectural decisions for PlayStation’s cloud streaming data pipeline
+Liaise with Business Intelligence and product domain teams to help turn data into information, and information into business value
+Required Qualifications
+Bachelor’s or Master’s degree in Computer Science or a related field or equivalent practical experience
+3+ years of experience in software development and backend engineering developing and maintaining high throughput and concurrent systems with high availability and fault tolerance
+Proficient in JVM Languages (Kotlin, Scala, Java) and Python
+Experience with Apache Kafka, Flink, Spark, and SQL
+Knowledge of software paradigms like functional programming, object oriented programming, TDD
+Knowledge of web technologies including REST, JSON, gRPC, and WebSockets
+Expertise on data structures (JSON, Avro, Protobuf) as well as unstructured and semi-structured data
+Experience with ETL, stream processing, real-time pipelines, and batch processing
+Familiarity with software development tools and processes like Git and CI/CD
+Track record monitoring and analyzing system performance, isolating issues or bottlenecks that could impact reliability, performance and scalability
+Self-motivated, strong interpersonal and communication skills; ability to work with geographically remote teams
+Experience with Amazon Web Services at enterprise scale including, but not limited to, OpenSearch, MSK, and EKS is a plus 
+Experience with Kubernetes, Docker, and cloud deployment technologies is a plus
+At SIE, we consider several factors when setting each role’s base pay range, including the competitive benchmarking data for the market and geographic location.
+
+Please note that the base pay range may vary in line with our hybrid working policy and individual base pay will be determined based on job-related factors which may include knowledge, skills, experience, and location. 
+
+In addition, this role is eligible for SIE’s top-tier benefits package that includes medical, dental, vision, matching 401(k), paid time off, wellness program and coveted employee discounts for Sony products. This role also may be eligible for a bonus package. Click here to learn more.
+
+ 
+
+The estimated base pay range for this role is listed below.
+$150,100—$225,100 USD
+Please note, Sony Interactive Entertainment conducts background checks at the offer stage for all new employees (which may include criminal background checks for some roles) and will need to process personal information to support these checks.
+
+Please refer to our Candidate Privacy Notice for more information about what personal information we collect, how we use it, who we share it with, and your data protection rights.
+
+Equal Opportunity Statement:
+
+Sony is an Equal Opportunity Employer. All persons will receive consideration for employment without regard to gender (including gender identity, gender expression and gender reassignment), race (including colour, nationality, ethnic or national origin), religion or belief, marital or civil partnership status, disability, age, sexual orientation, pregnancy, maternity or parental status, trade union membership or membership in any other legally protected category.
+
+We strive to create an inclusive environment, empower employees and embrace diversity. We encourage everyone to respond. 
+
+Sony Interactive Entertainment is a Fair Chance employer and qualified applicants with arrest and conviction records will be considered for employment.
+
+ 
+
+Apply Now
+About
+About SIE
+Careers
+PlayStation Studios
+PlayStation Productions
+Corporate
+Products
+PS5
+PS4
+PS VR2
+PS Plus
+Accessories
+Games
+Value
+Environment
+Accessibility
+Online Safety
+Diversity, Equity & Inclusion
+Support
+Support Hub
+PlayStation Safety
+PSN Status
+PlayStation Repairs
+Password Reset
+Manuals
+News & Media
+Newsroom
+SIE.Blog
+Tech.Blog
+Press Releases
+Media Inquiries
+SIE and PlayStation logo
+© 2026 Sony Interactive Entertainment LLC
+Join Our Playtesting Program
+All content, games titles, trade names and/or trade dress, trademarks, artwork and associated imagery are trademarks and/or copyright material of their respective owners. All rights reserved. More info.
+
+Site powered by paradox.ai
+Legal
+Privacy Policy
+Website Terms of Use
+Cookie Policy
+PlayStation Support and Compliance
+Do Not Share My Personal Information
