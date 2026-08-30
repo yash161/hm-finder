@@ -14,6 +14,13 @@ from typing import List, Dict, Optional, Any, Tuple
 import requests
 from groq import Groq
 
+# Load .env file for local development
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not installed, rely on shell env vars
+
 API_KEY = os.getenv("TINYFISH_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 SKILLS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "skills-files")
@@ -103,6 +110,20 @@ class JobAnalyzer:
         r"form\s+cc-305",
         r"powered\s+by\s*\n",
         r"site\s+powered\s+by",
+        # LinkedIn page noise
+        r"See\s+how\s+you\s+compare",
+        r"Exclusive\s+Job\s+Seeker\s+Insights",
+        r"Set\s+alert\s+for\s+similar\s+jobs",
+        r"More\s+jobs\b",
+        r"People\s+you\s+can\s+reach\s+out\s+to",
+        r"Show\s+Premium\s+Insights",
+        r"Interested\s+in\s+working\s+with\s+us",
+    ]
+
+    # LinkedIn/job-board navigation noise — strip everything before "About the job"
+    LINKEDIN_HEADER_MARKERS = [
+        r"About\s+the\s+job\b",
+        r"Job\s+description\b",
     ]
 
     DEPARTMENT_KEYWORDS = {
@@ -158,7 +179,15 @@ class JobAnalyzer:
 
     @classmethod
     def _strip_form_boilerplate(cls, text: str) -> str:
-        """Remove application form noise from the bottom of pasted JDs."""
+        """Remove application form noise and LinkedIn page chrome from pasted JDs."""
+        # Strip LinkedIn header noise — find "About the job" and discard nav above it
+        for marker in cls.LINKEDIN_HEADER_MARKERS:
+            m = re.search(marker, text, re.IGNORECASE)
+            if m:
+                text = text[m.end():].strip()
+                break
+
+        # Strip footer/form noise
         for marker in cls.FORM_CUTOFF_MARKERS:
             m = re.search(marker, text, re.IGNORECASE)
             if m:
@@ -168,12 +197,23 @@ class JobAnalyzer:
     @classmethod
     def extract_company_and_aliases(cls, text: str) -> Tuple[str, List[str]]:
         """Extracts the primary company name and any alternate brand names/aliases."""
-        # Strip form boilerplate BEFORE parsing
+        # Explicit label at very top of text (e.g. "Company, Belvedere Trading, LLC.")
+        explicit_m = re.search(r"(?:Company|Employer|Organization)[,\s:\-–]+\s*([A-Za-z0-9][\w\s,\.\-&]+?)(?:\s*(?:LLC|Inc|Ltd|Corporation|Corp)\.?)?(?:\n|$)", text, re.IGNORECASE)
+        explicit_top_company = None
+        if explicit_m:
+            val = explicit_m.group(1).strip(" ,.\n\t")
+            val = re.sub(r"\s*(LLC|Inc|Ltd|Corporation|Corp)\.?$", "", val, flags=re.IGNORECASE).strip(" ,.\n\t")
+            if 2 < len(val) < 50 and val.lower() not in cls.STOP_WORDS:
+                explicit_top_company = val
+
+        # Strip form boilerplate BEFORE parsing body
         clean_text = cls._strip_form_boilerplate(text)
 
         primary = ""
         aliases = []
         candidates = []
+        if explicit_top_company:
+            candidates.append(explicit_top_company)
 
         # Strategy 0: "Who we are" / "About us" section — look for the first sentence
         # e.g. "Lab37 Robotics, is a technology company..."
