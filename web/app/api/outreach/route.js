@@ -189,6 +189,59 @@ function cleanSection(s) {
   return s;
 }
 
+// ===== Ensure connection note is 285-300 chars =====
+const CN_PREFIX = "I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer.";
+const CN_SUFFIX = "Would you be open to a quick chat?";
+
+function ensureConnectionNoteLength(note, job, domain) {
+  // If already in range and has correct start/end, return as-is
+  if (note.length >= 285 && note.length <= 300 &&
+      note.startsWith(CN_PREFIX) && note.endsWith(CN_SUFFIX)) {
+    return note;
+  }
+
+  // Build programmatically to guarantee the range
+  const role = job.title || "this role";
+  const company = job.company || "your company";
+  const loc = job.location && job.location.toLowerCase() !== "remote" ? job.location : null;
+  const skills = domain.skills || ["Kubernetes", "Go/Python", "Terraform"];
+
+  // Try multiple middle phrases of varying length
+  const midOptions = [
+    `I noticed the ${role} role at ${company} and it really caught my attention. My background is in ${skills[0]}, ${skills[1]}, and ${skills[2]} across production systems.`,
+    `I came across the ${role} role at ${company} and it caught my eye. I've spent the last few years working with ${skills[0]}, ${skills[1]}, and ${skills[2]}.`,
+    `I saw the ${role} role at ${company} and it really resonated with me. I've been working with ${skills[0]}, ${skills[1]}, and ${skills[2]} in production environments.`,
+    loc ? `I noticed the ${role} opening at ${company} in ${loc}. My background spans ${skills[0]}, ${skills[1]}, and ${skills[2]} across several production systems.` : null,
+    `I came across the ${role} position at ${company}. I've been building with ${skills[0]}, ${skills[1]}, and ${skills[2]} across multiple teams and production systems.`,
+    `I saw the ${role} role at ${company} and wanted to reach out. I've worked extensively with ${skills[0]}, ${skills[1]}, and ${skills[2]} in production.`,
+    loc ? `I noticed the ${role} role at ${company} in ${loc} and it caught my eye. I've been working with ${skills[0]} and ${skills[1]} across production systems.` : null,
+    `I came across the ${role} role at ${company} and it really resonated. I have hands-on experience with ${skills[0]}, ${skills[1]}, and ${skills[2]} in production settings.`,
+  ].filter(Boolean);
+
+  for (const mid of midOptions) {
+    const candidate = `${CN_PREFIX} ${mid} ${CN_SUFFIX}`;
+    if (candidate.length >= 285 && candidate.length <= 300) {
+      return candidate;
+    }
+  }
+
+  // If nothing fits exactly, pick the closest one under 300
+  let best = "";
+  let bestDiff = Infinity;
+  for (const mid of midOptions) {
+    const candidate = `${CN_PREFIX} ${mid} ${CN_SUFFIX}`;
+    if (candidate.length <= 300) {
+      const diff = Math.abs(candidate.length - 292);
+      if (diff < bestDiff) {
+        best = candidate;
+        bestDiff = diff;
+      }
+    }
+  }
+
+  return best || `${CN_PREFIX} ${midOptions[0]} ${CN_SUFFIX}`.substring(0, 300);
+}
+
 export async function POST(req) {
   try {
     const { candidate, job } = await req.json();
@@ -210,8 +263,21 @@ ${CANDIDATE_PROFILE}
 
 TEMPLATES TO FOLLOW (fill in the brackets with real content from the profile above):
 
-=== CONNECTION NOTE TEMPLATE ===
-I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. I saw your post about the [Role] role at [Company]. My background is in [Skill 1], [Skill 2], and [Skill 3]. Would love to connect.
+=== CONNECTION NOTE RULES ===
+HARD LIMIT: The note MUST be between 285 and 300 characters. Under 280 = FAILURE. Over 300 = FAILURE.
+MUST start with exactly: "I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer."
+MUST end with exactly: "Would you be open to a quick chat?"
+Between those two fixed parts, write 2-3 conversational sentences that:
+- Mention the specific role and company name
+- Include location when it fits naturally
+- Name 2-3 relevant skills or technologies matching the role
+No em-dashes. No forced metrics. No JD wording. Complete sentences only.
+
+EXAMPLE 1 (290 chars):
+I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. I came across the Platform Engineer role at Datadog and it caught my eye. I've spent the last few years working with Kubernetes, Terraform, and Go across production systems. Would you be open to a quick chat?
+
+EXAMPLE 2 (295 chars):
+I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. I noticed the Data Engineer role at Snowflake and it really caught my attention. My background is in building ETL pipelines, AWS Step Functions, and Spark across multiple production environments. Would you be open to a quick chat?
 
 === COLD EMAIL TEMPLATE ===
 Subject: [Role] at [Company] - [what you built] | [outcome or tech stack]
@@ -239,7 +305,7 @@ Hi [Name], just floating this to the top of your inbox. Still really interested 
 
 ABSOLUTE RULES (VIOLATIONS = FAILURE):
 - Fill the templates above with REAL proof points from the candidate profile
-- LinkedIn note MUST be under 300 characters total
+- LinkedIn note MUST be 285-300 characters. Count carefully. Under 285 = too short. Over 300 = FAIL.
 - For ${job.department} roles: pick the 3 most relevant skills from: ${domain.skills.join(", ")}
 - Pick proof points that are MOST relevant to the ${job.department} domain and ${job.title} role
 - The "what you built" in the email subject should be a specific project relevant to this role
@@ -264,9 +330,9 @@ FOLLOW-UP:
 
     if (!raw) {
       // If both LLMs fail, generate from template directly
-      const connectionNote = `I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. I saw your post about the ${job.title} role at ${job.company}. My background is in ${domain.skills.join(", ")}. Would love to connect.`;
+      const connectionNote = ensureConnectionNoteLength("", job, domain);
 
-      const email = `Subject: ${job.title} at ${job.company} — ${domain.zipline.split(",")[0]} | ${domain.skills[0]}
+      const email = `Subject: ${job.title} at ${job.company} - ${domain.zipline.split(",")[0]} | ${domain.skills[0]}
 
 Hi ${firstName},
 
@@ -316,7 +382,8 @@ yashshah3698@gmail.com | +1 213-301-8249`;
       followup = parts[2] || "";
     }
 
-    if (connectionNote.length > 300) connectionNote = connectionNote.substring(0, 297) + "...";
+    // Enforce 285-300 char connection note programmatically (LLMs can't count chars)
+    connectionNote = ensureConnectionNoteLength(connectionNote, job, domain);
 
     return NextResponse.json({
       connection_note: connectionNote,
