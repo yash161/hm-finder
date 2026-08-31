@@ -2,50 +2,19 @@ import { NextResponse } from "next/server";
 
 const TINYFISH_API_KEY = process.env.TINYFISH_API_KEY || "";
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const TINYFISH_SEARCH_URL = "https://api.search.tinyfish.ai";
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-// ===== LLM-based JD Extraction (primary method) =====
-async function extractJobInfoWithLLM(text) {
-  if (!GROQ_API_KEY) return null;
-  
-  // Send first 4000 chars — enough context for the main JD, avoids sending sidebar noise
-  const truncated = text.substring(0, 4000);
-  
-  try {
-    const res = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "qwen/qwen3.8-27b",
-        messages: [
-          {
-            role: "system",
-            content: `/no_think\nYou extract structured job info from raw pasted text. The text may contain multiple job listings, navigation noise, sidebar recommendations, and other garbage. Identify ONLY the PRIMARY job being viewed (the main/featured one, not sidebar recommendations). Output ONLY valid JSON with these fields:
+const JD_EXTRACT_PROMPT = `You extract structured job info from raw pasted text. The text may contain multiple job listings, navigation noise, sidebar recommendations, and other garbage. Identify ONLY the PRIMARY job being viewed (the main/featured one, not sidebar recommendations). Output ONLY valid JSON with these fields:
 {"company": "...", "title": "...", "location": "...", "department": "engineering|data & ai|product|design|trading|security"}
-No explanation, no markdown, no code fences. Just the JSON object.`
-          },
-          {
-            role: "user",
-            content: truncated
-          }
-        ],
-        temperature: 0,
-        max_completion_tokens: 150,
-      }),
-    });
-    
-    if (!res.ok) return null;
-    
-    const data = await res.json();
-    let content = data.choices?.[0]?.message?.content || "";
-    
-    // Strip any markdown fences or think tags
-    content = content.replace(/```json\s*/g, "").replace(/```/g, "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-    
+No explanation, no markdown, no code fences. Just the JSON object.`;
+
+function parseExtractedJSON(content) {
+  if (!content) return null;
+  // Strip markdown fences, think tags, etc.
+  content = content.replace(/```json\s*/g, "").replace(/```/g, "")
+    .replace(/<think>[\s\S]*?<\/think>/g, "").replace(/<\/?think>/g, "").trim();
+  try {
     const parsed = JSON.parse(content);
     if (parsed.company && parsed.company.length > 1 && parsed.title) {
       return {
@@ -55,11 +24,75 @@ No explanation, no markdown, no code fences. Just the JSON object.`
         department: parsed.department || "engineering",
       };
     }
-    return null;
-  } catch (err) {
-    console.error("[LLM Extract Error]", err);
-    return null;
+  } catch {}
+  return null;
+}
+
+// ===== LLM-based JD Extraction with Groq → Gemini fallback =====
+async function extractJobInfoWithLLM(text) {
+  const truncated = text.substring(0, 4000);
+
+  // Try Groq first
+  if (GROQ_API_KEY) {
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "qwen/qwen3.8-27b",
+          messages: [
+            { role: "system", content: `/no_think\n${JD_EXTRACT_PROMPT}` },
+            { role: "user", content: truncated },
+          ],
+          temperature: 0,
+          max_completion_tokens: 150,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const result = parseExtractedJSON(data.choices?.[0]?.message?.content);
+        if (result) { console.log("[JD Extract] Groq succeeded"); return result; }
+      } else {
+        console.error("[Groq JD Extract] Status:", res.status);
+      }
+    } catch (err) {
+      console.error("[Groq JD Extract Error]", err);
+    }
   }
+
+  // Fallback to Gemini
+  if (GEMINI_API_KEY) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: JD_EXTRACT_PROMPT }] },
+            contents: [{ parts: [{ text: truncated }] }],
+            generationConfig: { temperature: 0, maxOutputTokens: 150 },
+          }),
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const result = parseExtractedJSON(content);
+        if (result) { console.log("[JD Extract] Gemini fallback succeeded"); return result; }
+      } else {
+        console.error("[Gemini JD Extract] Status:", res.status);
+      }
+    } catch (err) {
+      console.error("[Gemini JD Extract Error]", err);
+    }
+  }
+
+  console.log("[JD Extract] Both LLMs failed, using regex");
+  return null;
 }
 
 // ===== Boilerplate & Noise Markers =====
