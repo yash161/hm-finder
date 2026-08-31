@@ -280,6 +280,8 @@ EXAMPLE 2 (295 chars):
 I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. I noticed the Data Engineer role at Snowflake and it really caught my attention. My background is in building ETL pipelines, AWS Step Functions, and Spark across multiple production environments. Would you be open to a quick chat?
 
 === COLD EMAIL TEMPLATE ===
+Subject: [Role] - [punchy outcome or differentiator, max 8 words]
+
 Hi [Name],
 
 I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. The [Role] role at [Company] caught my eye because of [one specific thing about the role or company that genuinely interests you].
@@ -290,14 +292,14 @@ I'd bring that same [key strength] to this role, along with a real interest in [
 
 Would love to connect and hear more about the role. Happy to chat whenever works for you.
 
-Best,
-Yash Shah
-yashshah3698@gmail.com | +1 213-301-8249
 LinkedIn: https://www.linkedin.com/in/yash-shah-b7129b1bb/
 GitHub: https://github.com/yash161
 Portfolio: https://portfolio-two-liard-51.vercel.app/
 Research: https://www.proquest.com/docview/3351316152
 Resume: Attached
+
+Best,
+Yash Shah
 
 === FOLLOW-UP TEMPLATE ===
 Hi [Name], just floating this to the top of your inbox. Still really interested in the [Role] role at [Company]. Happy to chat for 10 minutes whenever works. Best, Yash
@@ -331,7 +333,7 @@ FOLLOW-UP:
       // If both LLMs fail, generate from template directly
       const connectionNote = ensureConnectionNoteLength("", job, domain);
 
-      const email = `Subject: ${job.title} at ${job.company} - ${domain.zipline.split(",")[0]} | ${domain.skills[0]}
+      const email = `Subject: ${job.title} at ${job.company} - ${domain.skills[0]} and ${domain.skills[1]}
 
 Hi ${firstName},
 
@@ -343,14 +345,14 @@ I'd bring that same hands-on approach to this role, along with a real interest i
 
 Would love to connect and hear more about the role. Happy to chat whenever works for you.
 
-Best,
-Yash Shah
-yashshah3698@gmail.com | +1 213-301-8249
 LinkedIn: https://www.linkedin.com/in/yash-shah-b7129b1bb/
 GitHub: https://github.com/yash161
 Portfolio: https://portfolio-two-liard-51.vercel.app/
 Research: https://www.proquest.com/docview/3351316152
-Resume: Attached`;
+Resume: Attached
+
+Best,
+Yash Shah`;
 
       const followup = `Hi ${firstName}, just floating this to the top of your inbox. Still really interested in the ${job.title} role at ${job.company}. Happy to chat for 10 minutes whenever works. Best, Yash`;
 
