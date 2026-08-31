@@ -35,27 +35,27 @@ RESEARCH (CSULA):
 const DOMAIN_PROOF_POINTS = {
   "data & ai": {
     skills: ["ETL pipelines", "Snowflake", "AWS Step Functions"],
-    zipline: "engineered automated label-sync pipeline in Python, eliminating drift across 330+ distributed HIL nodes",
-    datahub: "built AI-powered Kubernetes troubleshooting agent for Redshift data platform using FastAPI + LLM",
-    squadron: "designed metadata-driven ETL pipeline replicating PostgreSQL, GA, S3 → Snowflake via AWS Step Functions + Lambda/Glue Spark",
+    zipline: "built an automated label-sync pipeline in Python that eliminated drift across 330+ distributed HIL nodes",
+    datahub: "built an AI-powered Kubernetes troubleshooting agent for our Redshift data platform with FastAPI and LLM",
+    squadron: "built a metadata-driven ETL pipeline replicating PostgreSQL, GA, and S3 into Snowflake via AWS Step Functions and Lambda/Glue Spark",
   },
   engineering: {
     skills: ["Kubernetes", "Go/Python", "Terraform IaC"],
-    zipline: "engineered automated label-sync pipeline in Python, eliminating drift across 330+ distributed HIL nodes",
-    datahub: "built infrastructure drift detection platform in Go comparing Terraform state vs live cloud APIs",
-    squadron: "codified pipeline infrastructure across 34 Terraform files (Lambda, Glue, Step Functions, EventBridge, VPC, IAM)",
+    zipline: "built an automated label-sync pipeline in Python that eliminated drift across 330+ distributed HIL nodes",
+    datahub: "built an infrastructure drift detection platform in Go that compares Terraform state against live cloud APIs",
+    squadron: "wrote 34 Terraform files covering Lambda, Glue, Step Functions, EventBridge, VPC, and IAM for our pipeline infra",
   },
   security: {
     skills: ["DevSecOps", "IAM/KMS", "Kubernetes security"],
-    zipline: "diagnosed GitHub API token exhaustion, shipped async fallback keeping label updates running",
-    datahub: "built infrastructure drift detection platform in Go (Terraform state vs live cloud API)",
-    squadron: "codified secure pipeline infrastructure across 34 Terraform files with IAM and VPC controls",
+    zipline: "diagnosed a GitHub API token exhaustion bug and shipped an async fallback that kept label updates running",
+    datahub: "built an infrastructure drift detection platform in Go (Terraform state vs live cloud API)",
+    squadron: "wrote 34 Terraform files with IAM and VPC controls for our pipeline infrastructure",
   },
   product: {
     skills: ["Full-stack dev", "React/TypeScript", "FastAPI"],
-    zipline: "engineered automated label-sync pipeline in Python, eliminating drift across 330+ distributed HIL nodes",
-    datahub: "built agentic Azure cost investigation platform (React, TypeScript, FastAPI, Azure CLI, OpenAI)",
-    squadron: "engineered production-grade Scrapy crawling platform serving 8+ client organizations",
+    zipline: "built an automated label-sync pipeline in Python that eliminated drift across 330+ distributed HIL nodes",
+    datahub: "built an Azure cost investigation platform with React, TypeScript, FastAPI, and OpenAI",
+    squadron: "built a production Scrapy crawling platform serving 8+ client organizations",
   },
 };
 
@@ -134,6 +134,23 @@ async function callLLM(systemPrompt, userPrompt) {
   return null;
 }
 
+// ===== Banned Words (from skill files) =====
+const BANNED_WORDS = [
+  "codified", "engineered", "architected", "orchestrated", "spearheaded",
+  "leveraged", "utilized", "harnessed", "facilitated", "streamlined",
+  "cutting-edge", "state-of-the-art", "world-class", "best-in-class",
+  "robust", "scalable", "pivotal", "synergy", "paradigm",
+  "furthermore", "moreover", "consequently", "notwithstanding",
+  "it is worth noting", "delve", "in conclusion",
+  "modern DevOps practices", "generic best practices",
+  "cross-functional collaboration", "stakeholder", "interpersonal",
+  "game-changing", "transformative", "innovative solution",
+  "passion for", "passionate about", "excited to",
+  "seamless", "seamlessly", "holistic", "synergistic",
+  "deep dive", "circle back", "move the needle",
+  "touch base", "low-hanging fruit", "take it to the next level",
+];
+
 // ===== Clean LLM output =====
 function cleanLLMOutput(raw) {
   if (!raw) return raw;
@@ -149,12 +166,27 @@ function cleanLLMOutput(raw) {
 }
 
 function cleanSection(s) {
-  return s
+  s = s
     .replace(/^\s*\*\*(?:Deconstruct|Target|Role|Location|Sender|Relevant|Candidate|Rules|Output).*$/gim, "")
     .replace(/^\s*\*\s+\*\*.*$/gim, "")
     .replace(/^\s*\d+\.\s+\*\*.*$/gim, "")
     .replace(/^Thinking Process:.*$/gim, "")
     .trim();
+  // Strip em-dashes and replace with plain dashes or commas
+  s = s.replace(/\s*[\u2014\u2013]\s*/g, " - ");
+  // Strip excessive dashes (--- or --)
+  s = s.replace(/\s*---+\s*/g, " - ");
+  s = s.replace(/\s*--\s*/g, " - ");
+  // Strip markdown bold/italic markers
+  s = s.replace(/\*\*/g, "").replace(/\*/g, "");
+  // Strip any remaining banned words (case-insensitive)
+  for (const word of BANNED_WORDS) {
+    const regex = new RegExp(word, "gi");
+    s = s.replace(regex, "");
+  }
+  // Clean up double spaces and trailing commas from removals
+  s = s.replace(/  +/g, " ").replace(/\s+,/g, ",").replace(/,\s*,/g, ",").trim();
+  return s;
 }
 
 export async function POST(req) {
@@ -164,12 +196,12 @@ export async function POST(req) {
     const firstName = candidate.name !== "Unknown Name" ? candidate.name.split(" ")[0] : "there";
     const domain = DOMAIN_PROOF_POINTS[job.department] || DOMAIN_PROOF_POINTS.engineering;
 
-    const systemPrompt = `You are an elite career coach and executive copywriter. Output ONLY the final messages. No thinking, no explanations, no reasoning, no commentary. No markdown formatting. Plain text only.`;
+    const systemPrompt = `You are a career coach who writes like a real human, not an AI. Output ONLY the final messages. No thinking, no explanations, no reasoning, no commentary. No markdown formatting. Plain text only. No em-dashes. No bold. No italic.`;
 
     const userPrompt = `Generate personalized outreach messages for this situation:
 
 TARGET: ${candidate.name} (${candidate.headline}) at ${job.company}
-ROLE: ${job.title} — ${job.department}
+ROLE: ${job.title} - ${job.department}
 LOCATION: ${job.location || "Not specified"}
 SENDER: Yash Shah (Recent M.S. CS grad from Cal State LA, Ex-Zipline engineer)
 
@@ -182,7 +214,7 @@ TEMPLATES TO FOLLOW (fill in the brackets with real content from the profile abo
 I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. I saw your post about the [Role] role at [Company]. My background is in [Skill 1], [Skill 2], and [Skill 3]. Would love to connect.
 
 === COLD EMAIL TEMPLATE ===
-Subject: [Role] at [Company] — [what you built] | [outcome or tech stack]
+Subject: [Role] at [Company] - [what you built] | [outcome or tech stack]
 
 Hi [Name],
 
@@ -205,14 +237,17 @@ yashshah3698@gmail.com | +1 213-301-8249
 === FOLLOW-UP TEMPLATE ===
 Hi [Name], just floating this to the top of your inbox. Still really interested in the [Role] role at [Company]. Happy to chat for 10 minutes whenever works. Best, Yash
 
-CRITICAL RULES:
+ABSOLUTE RULES (VIOLATIONS = FAILURE):
 - Fill the templates above with REAL proof points from the candidate profile
 - LinkedIn note MUST be under 300 characters total
 - For ${job.department} roles: pick the 3 most relevant skills from: ${domain.skills.join(", ")}
 - Pick proof points that are MOST relevant to the ${job.department} domain and ${job.title} role
 - The "what you built" in the email subject should be a specific project relevant to this role
 - The "why this company" sentence should reference something specific about ${job.company}
-- Keep the tone casual and direct — no corporate buzzwords
+- NO em-dashes (the long dash character). Use regular hyphens (-) or commas instead.
+- NO markdown formatting. No **bold**, no *italic*, no ### headers.
+- BANNED WORDS (never use any of these): codified, engineered, architected, orchestrated, spearheaded, leveraged, utilized, harnessed, facilitated, streamlined, cutting-edge, state-of-the-art, world-class, robust, scalable, pivotal, synergy, furthermore, moreover, consequently, notwithstanding, delve, in conclusion, modern DevOps practices, cross-functional collaboration, stakeholder, seamless, seamlessly, holistic, game-changing, transformative, innovative solution, passionate about, excited to
+- Write like a real person texting a friend about their job. Use contractions. Short sentences. No corporate speak.
 - DO NOT add any extra text, explanations, or commentary
 
 OUTPUT FORMAT (exactly):
