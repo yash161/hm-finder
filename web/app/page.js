@@ -351,7 +351,7 @@ export default function Home() {
         <header className="header">
           <div className="header-badge"><Icon name="sparkles" size={13} /> AI-Powered</div>
           <h1>HM Finder</h1>
-          <p>Paste a job description. We&apos;ll find the hiring manager and generate personalized outreach — all in seconds.</p>
+          <p>Paste a job description. We&apos;ll find the hiring manager and generate personalized outreach - all in seconds.</p>
         </header>
 
         <Steps current={step} />
