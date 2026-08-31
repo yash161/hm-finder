@@ -280,25 +280,24 @@ EXAMPLE 2 (295 chars):
 I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. I noticed the Data Engineer role at Snowflake and it really caught my attention. My background is in building ETL pipelines, AWS Step Functions, and Spark across multiple production environments. Would you be open to a quick chat?
 
 === COLD EMAIL TEMPLATE ===
-Subject: [Role] at [Company] - [what you built] | [outcome or tech stack]
-
 Hi [Name],
 
-Saw your post about the [Role] role at [Company] and wanted to reach out directly.
+I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. The [Role] role at [Company] caught my eye because of [one specific thing about the role or company that genuinely interests you].
 
-I'm a recent M.S. CS grad and Ex-Zipline engineer. At Zipline I [most relevant Zipline proof point]. At DataHub I [second proof point with metric]. At Squadron I [third proof point with metric].
+At Zipline I [most relevant Zipline proof point], at DataHub I [second proof point], and at Squadron I [third proof point], so I've seen [relevant domain] from multiple sides.
 
-[One sentence on why this company/role specifically.]
+I'd bring that same [key strength] to this role, along with a real interest in [one genuine thing about the team or mission].
 
-Resume: Attached
-LinkedIn: https://www.linkedin.com/in/yash-shah-b7129b1bb/
-GitHub: https://github.com/yash161
-Portfolio: https://portfolio-two-liard-51.vercel.app/
-Research: https://www.proquest.com/docview/3351316152
+Would love to connect and hear more about the role. Happy to chat whenever works for you.
 
 Best,
 Yash Shah
 yashshah3698@gmail.com | +1 213-301-8249
+LinkedIn: https://www.linkedin.com/in/yash-shah-b7129b1bb/
+GitHub: https://github.com/yash161
+Portfolio: https://portfolio-two-liard-51.vercel.app/
+Research: https://www.proquest.com/docview/3351316152
+Resume: Attached
 
 === FOLLOW-UP TEMPLATE ===
 Hi [Name], just floating this to the top of your inbox. Still really interested in the [Role] role at [Company]. Happy to chat for 10 minutes whenever works. Best, Yash
@@ -336,21 +335,22 @@ FOLLOW-UP:
 
 Hi ${firstName},
 
-Saw your post about the ${job.title} role at ${job.company} and wanted to reach out directly.
+I'm Yash, a recent M.S. CS grad and Ex-Zipline engineer. The ${job.title} role at ${job.company} caught my eye because of the technical depth the team seems to value.
 
-I'm a recent M.S. CS grad and Ex-Zipline engineer. At Zipline I ${domain.zipline}. At DataHub I ${domain.datahub}. At Squadron I ${domain.squadron}.
+At Zipline I ${domain.zipline}, at DataHub I ${domain.datahub}, and at Squadron I ${domain.squadron}, so I've seen ${job.department} from multiple sides.
 
-I'm drawn to ${job.company} because of the technical depth the team seems to value.
+I'd bring that same hands-on approach to this role, along with a real interest in what ${job.company} is building.
 
-Resume: Attached
+Would love to connect and hear more about the role. Happy to chat whenever works for you.
+
+Best,
+Yash Shah
+yashshah3698@gmail.com | +1 213-301-8249
 LinkedIn: https://www.linkedin.com/in/yash-shah-b7129b1bb/
 GitHub: https://github.com/yash161
 Portfolio: https://portfolio-two-liard-51.vercel.app/
 Research: https://www.proquest.com/docview/3351316152
-
-Best,
-Yash Shah
-yashshah3698@gmail.com | +1 213-301-8249`;
+Resume: Attached`;
 
       const followup = `Hi ${firstName}, just floating this to the top of your inbox. Still really interested in the ${job.title} role at ${job.company}. Happy to chat for 10 minutes whenever works. Best, Yash`;
 
