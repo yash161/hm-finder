@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 const THEME_KEY = "hm-finder-theme";
+const PRESENCE_SESSION_KEY = "hm-finder-session-id";
+const PRESENCE_NAME_KEY = "hm-finder-username";
+const PRESENCE_INTERVAL_MS = 15000;
 
 // ===== Icon System =====
 const ICON_PATHS = {
@@ -97,6 +100,117 @@ function ThemeToggle() {
       {theme === "light" ? "Dark" : "Light"}
     </button>
   );
+}
+
+// ===== Presence Widget (active users on the page) =====
+function PresenceWidget() {
+  const [name, setName] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return localStorage.getItem(PRESENCE_NAME_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
+  const [users, setUsers] = useState([]);
+  const [open, setOpen] = useState(false);
+  const sessionIdRef = useRef(null);
+  const nameRef = useRef(name);
+
+  useEffect(() => {
+    nameRef.current = name;
+  }, [name]);
+
+  const sendHeartbeat = useCallback(() => {
+    if (!sessionIdRef.current) return;
+    fetch("/api/active-users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: sessionIdRef.current, name: nameRef.current }),
+    }).catch(() => {});
+  }, []);
+
+  const fetchUsers = useCallback(() => {
+    fetch("/api/active-users")
+      .then((res) => res.json())
+      .then((data) => setUsers(data.users || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let id;
+    try {
+      id = localStorage.getItem(PRESENCE_SESSION_KEY);
+    } catch {}
+    if (!id) {
+      id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      try {
+        localStorage.setItem(PRESENCE_SESSION_KEY, id);
+      } catch {}
+    }
+    sessionIdRef.current = id;
+
+    sendHeartbeat();
+    fetchUsers();
+
+    const hbInterval = setInterval(sendHeartbeat, PRESENCE_INTERVAL_MS);
+    const pollInterval = setInterval(fetchUsers, PRESENCE_INTERVAL_MS);
+    return () => {
+      clearInterval(hbInterval);
+      clearInterval(pollInterval);
+    };
+  }, [sendHeartbeat, fetchUsers]);
+
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    setName(value);
+    nameRef.current = value;
+    try {
+      localStorage.setItem(PRESENCE_NAME_KEY, value);
+    } catch {}
+    sendHeartbeat();
+  };
+
+  return (
+    <div className="presence-widget">
+      <button className="presence-pill" onClick={() => setOpen((o) => !o)} type="button">
+        <span className="presence-dot" /> {users.length} active
+      </button>
+      {open && (
+        <div className="presence-panel fade-in">
+          <div className="presence-name-label">Your name</div>
+          <input
+            className="presence-name-input"
+            type="text"
+            placeholder="Guest"
+            maxLength={40}
+            value={name}
+            onChange={handleNameChange}
+          />
+          {users.length === 0 ? (
+            <div className="presence-empty">No active users yet.</div>
+          ) : (
+            <div className="presence-user-list">
+              {users.map((u) => (
+                <div className="presence-user-row" key={u.id}>
+                  <span className="pu-name">{u.name}</span>
+                  <span className="pu-ip">{u.ip}</span>
+                  <span className="pu-seen">{timeAgo(u.lastSeen)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function timeAgo(isoString) {
+  const seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ago`;
 }
 
 // ===== Golden Gate Bridge Silhouette =====
@@ -346,6 +460,7 @@ export default function Home() {
       <div className="bg-gradient" />
       <BridgeSilhouette />
       <ThemeToggle />
+      <PresenceWidget />
       <div className="app-container">
         {/* Header */}
         <header className="header">
