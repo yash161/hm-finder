@@ -17,7 +17,7 @@ export async function GET() {
           drainStalled: false,
           sendPausedUntil: null,
           transport: "gmail-smtp",
-          followupsAvailable: false,
+          followupsAvailable: true,
         },
       });
     }
